@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/popodidi/conf/source"
@@ -26,7 +25,7 @@ func New(ptr interface{}) *Config {
 // Load loads the config from readers.
 func (c *Config) Load(readers []source.Reader) error {
 	c.m = make(map[string]interface{})
-	return c.iterFields(
+	return iterFields(reflect.ValueOf(c.ptr), "",
 		func(field reflect.Value, typeField reflect.StructField, key string) (
 			err error) {
 			// cache loaded value in the map
@@ -56,35 +55,14 @@ func (c *Config) Load(readers []source.Reader) error {
 			}
 
 			// parse value
-			switch field.Kind() {
-			case reflect.String:
-				finalVal = reflect.ValueOf(value)
-			case reflect.Int:
-				var i int64
-				i, err = strconv.ParseInt(value, 0, 0)
-				if err != nil {
-					err = fmt.Errorf("failed to parse int for \"%s\" from \"%s\". %v", key, value, ErrInvalidValue)
-					return
-				}
-				finalVal = reflect.ValueOf(int(i))
-			case reflect.Float64:
-				var f float64
-				f, err = strconv.ParseFloat(value, 64)
-				if err != nil {
-					err = fmt.Errorf("failed to parse float for \"%s\" from \"%s\". %v", key, value, ErrInvalidValue)
-					return
-				}
-				finalVal = reflect.ValueOf(float64(f))
-			case reflect.Bool:
-				var b bool
-				b, err = strconv.ParseBool(value)
-				if err != nil {
-					err = fmt.Errorf("failed to parse bool for \"%s\" from \"%s\". %w", key, value, ErrInvalidValue)
-					return
-				}
-				finalVal = reflect.ValueOf(b)
-			default:
+			valuer, ok := valuers[field.Kind()]
+			if !ok {
 				err = ErrUnsupportedType
+				return
+			}
+
+			finalVal, err = valuer(value)
+			if err != nil {
 				return
 			}
 
@@ -120,7 +98,7 @@ func (c *Config) Export(exporter source.Exporter, writer io.Writer) error {
 // Template returns a template string with exporter format.
 func (c *Config) Template(exporter source.Exporter) (string, error) {
 	m := make(map[string]interface{})
-	err := c.iterFields(
+	err := iterFields(reflect.ValueOf(c.ptr), "",
 		func(field reflect.Value, typeField reflect.StructField, key string) error {
 			m[key] = typeField.Type.Name()
 			return nil
@@ -144,63 +122,4 @@ func (c *Config) read(key string, readers []source.Reader) (val string, exists b
 		}
 	}
 	return
-}
-
-func (c *Config) iterFields(
-	fn func(field reflect.Value, typeField reflect.StructField, key string) error,
-) (err error) {
-	return c.iterFieldsRecursively(reflect.ValueOf(c.ptr), "", make(map[string]struct{}), fn)
-}
-
-func (c *Config) iterFieldsRecursively(ptrValue reflect.Value, prefix string, loadedKeys map[string]struct{},
-	fn func(field reflect.Value, typeField reflect.StructField, key string) error) (err error) {
-	ptrType := ptrValue.Type()
-	if ptrType == nil {
-		return ErrNilConfig
-	}
-
-	configKind := ptrValue.Kind()
-	if configKind != reflect.Ptr {
-		return ErrConfigNotPtr
-	}
-
-	configValue := ptrValue.Elem()
-	configType := configValue.Type()
-
-	if configValue.Kind() != reflect.Struct {
-		return ErrConfigNotStruct
-	}
-
-	for i := 0; i < configType.NumField(); i++ {
-		v := configValue.Field(i)
-		v.CanAddr()
-		t := configType.Field(i)
-		key := t.Name
-		if prefix != "" {
-			key = fmt.Sprintf("%s_%s", prefix, key)
-		}
-		key = strings.ToUpper(key)
-
-		// recursive call for struct fields
-		if v.Kind() == reflect.Struct {
-			if !v.CanAddr() {
-				return ErrCantAddr
-			}
-			err = c.iterFieldsRecursively(v.Addr(), key, loadedKeys, fn)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
-		if _, duplicate := loadedKeys[key]; duplicate {
-			return fmt.Errorf("key=%s. %w", key, ErrDuplicateKey)
-		}
-		loadedKeys[key] = struct{}{}
-		err = fn(v, t, key)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
