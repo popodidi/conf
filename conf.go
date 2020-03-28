@@ -10,6 +10,7 @@ func Load(config interface{}, readers ...source.Reader) (err error) {
 }
 
 // Template returns a config template with exporter.
-func Template(config interface{}, exporter source.Exporter) (tmpl string, err error) {
+func Template(config interface{}, exporter source.Exporter) (
+	tmpl string, err error) {
 	return New(config).Template(exporter)
 }

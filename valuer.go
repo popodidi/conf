@@ -13,6 +13,7 @@ var valuers = map[reflect.Kind]valuer{
 	reflect.Int:     intValuer,
 	reflect.Float64: float64Valuer,
 	reflect.Bool:    boolValuer,
+	// nolint: godox
 	// TODO: support more kinds.
 	// reflect.Int8
 	// reflect.Int16
@@ -58,7 +59,7 @@ func float64Valuer(str string) (reflect.Value, error) {
 			"failed to parse float from \"%s\". %v", str, ErrInvalidValue)
 		return reflect.Value{}, err
 	}
-	return reflect.ValueOf(float64(f)), nil
+	return reflect.ValueOf(f), nil
 }
 
 func boolValuer(str string) (reflect.Value, error) {

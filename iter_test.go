@@ -43,5 +43,4 @@ func TestIter(t *testing.T) {
 		"PREFIX_QQ":       struct{}{},
 	}
 	require.Equal(t, exp, m)
-
 }

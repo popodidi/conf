@@ -1,5 +1,9 @@
 # Conf
 
+![Go Test](https://github.com/popodidi/conf/workflows/Go%20Test/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/popodidi/conf)](https://goreportcard.com/report/github.com/popodidi/conf)
+[![Documentation](https://godoc.org/github.com/popodidi/conf?status.svg)](http://godoc.org/github.com/popodidi/conf)
+
 `conf` is a configuration parser that magically parses configurations into a
 golang struct.
 
@@ -77,15 +81,9 @@ type config struct {
 }
 ```
 
-## Roadmap
+## Supported Source
 
-The `conf` package is under actively development.
+The `conf` package currently supports the following sources.
 
-Source
-
-- [x] Environment Variable
-- [x] Yaml
-- [ ] JSON
-- [ ] Command line
-  - [ ] Abstract Flag Parser
-  - [ ] Prompt
+- Environment Variable
+- Yaml file

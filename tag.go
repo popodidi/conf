@@ -19,16 +19,15 @@ func parseTag(tagStr string) (ft fieldTag, err error) {
 	}
 	tags := strings.Split(tagStr, ",")
 	for _, t := range tags {
-		switch t {
-		default:
-			if strings.HasPrefix(t, tagDefaultPrefix) {
-				ft.hasDefault = true
-				ft.defaultValue = t[8:]
-				continue
-			}
-			err = ErrInvalidTag
-			return
+		// XXX: This should be a switch-case. However, since we only support one
+		// `default` tag at the moment, an if-else will do the work.
+		if strings.HasPrefix(t, tagDefaultPrefix) {
+			ft.hasDefault = true
+			ft.defaultValue = t[8:]
+			continue
 		}
+		err = ErrInvalidTag
+		return
 	}
 	return
 }

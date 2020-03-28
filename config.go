@@ -114,7 +114,8 @@ func (c *Config) Template(exporter source.Exporter) (string, error) {
 	return b.String(), nil
 }
 
-func (c *Config) read(key string, readers []source.Reader) (val string, exists bool) {
+func (c *Config) read(key string, readers []source.Reader) (
+	val string, exists bool) {
 	for _, reader := range readers {
 		val, exists = reader.Read(key)
 		if exists {
