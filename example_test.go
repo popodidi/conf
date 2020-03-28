@@ -5,6 +5,7 @@ import (
 
 	"github.com/popodidi/conf"
 	"github.com/popodidi/conf/source/env"
+	"github.com/popodidi/conf/source/memory"
 	"github.com/popodidi/conf/source/yaml"
 )
 
@@ -38,7 +39,7 @@ func Example_source() {
 	err := conf.Load(&cfg,
 		env.New(),
 		yaml.New("config.yaml"),
-		conf.NewMock(map[string]string{
+		memory.New(map[string]interface{}{
 			"STR":   "??",
 			"INT":   "12",
 			"FLOAT": "3.456",
