@@ -4,27 +4,41 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
-	"github.com/popodidi/conf/source"
+	"github.com/popodidi/conf"
 )
 
+const sep = "_"
+
 // New returns a env source.
-func New() source.Interface {
+func New() conf.Source {
 	return &env{}
 }
 
 type env struct{}
 
-func (e *env) Read(key string) (value string, exists bool) {
-	return os.LookupEnv(key)
+func (e *env) Read(key string, path ...string) (value string, exists bool) {
+	varName := e.varName(key, path...)
+	return os.LookupEnv(varName)
 }
 
-func (e *env) Export(m map[string]interface{}, writer io.Writer) error {
-	for key, val := range m {
-		_, err := writer.Write([]byte(fmt.Sprintf("%s=%v\n", key, val)))
-		if err != nil {
-			return err
-		}
+func (e *env) Export(m conf.Map, writer io.Writer) error {
+	var err error
+	m.Iter(func(key string, val interface{}, path ...string) bool {
+		name := e.varName(key, path...)
+		_, err = writer.Write([]byte(fmt.Sprintf("%s=%v\n", name, val)))
+		return err == nil
+	})
+	return err
+}
+
+func (e *env) varName(key string, path ...string) string {
+	key = strings.ToUpper(key)
+	if len(path) == 0 {
+		return key
 	}
-	return nil
+	name := strings.Join(path, sep)
+	name = strings.ToUpper(name)
+	return name + sep + key
 }

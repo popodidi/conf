@@ -1,18 +1,18 @@
 package conf
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 )
 
-const (
-	sep = "_"
-)
+type iterator func(
+	field reflect.Value,
+	typeField reflect.StructField,
+	key string,
+	path ...string,
+) error
 
-func iterFields(ptrValue reflect.Value, prefix string,
-	fn func(field reflect.Value, typeField reflect.StructField, key string) error,
-) (err error) {
+func iterFields(ptrValue reflect.Value, prepath []string,
+	fn iterator) (err error) {
 	ptrType := ptrValue.Type()
 	if ptrType == nil {
 		return ErrNilConfig
@@ -34,27 +34,37 @@ func iterFields(ptrValue reflect.Value, prefix string,
 		v := configValue.Field(i)
 		v.CanAddr()
 		t := configType.Field(i)
+		path := append(prepath[:0:0], prepath...)
 		key := t.Name
-		if prefix != "" {
-			key = fmt.Sprintf("%s%s%s", prefix, sep, key)
-		}
-		key = strings.ToUpper(key)
 
 		// recursive call for struct fields
 		if v.Kind() == reflect.Struct {
 			if !v.CanAddr() {
 				return ErrCantAddr
 			}
-			err = iterFields(v.Addr(), key, fn)
+			path = append(path, key)
+			err = iterFields(v.Addr(), path, fn)
 			if err != nil {
 				return err
 			}
 			continue
 		}
-		err = fn(v, t, key)
+
+		// call the iterator fn
+		err = fn(v, t, key, path...)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func mapRecorder(m Map) iterator {
+	return func(
+		field reflect.Value, typeField reflect.StructField,
+		key string, path ...string) (
+		err error,
+	) {
+		return m.MustIn(path...).Set(key, typeField.Type.Name())
+	}
 }

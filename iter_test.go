@@ -2,45 +2,32 @@ package conf
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func recordInMap(m map[string]struct{}) func(field reflect.Value,
-	typeField reflect.StructField, key string) error {
-	return func(
-		field reflect.Value, typeField reflect.StructField, key string) error {
-		m[key] = struct{}{}
-		return nil
-	}
-}
-
 func TestIter(t *testing.T) {
-	var c testCfg
+	var c TestCfg
 	// Test err
-	err := iterFields(
-		reflect.ValueOf(c),
-		"prefix",
-		nil,
-	)
+	err := iterFields(reflect.ValueOf(c), nil, nil)
 	require.True(t, errors.Is(err, ErrConfigNotPtr), err)
 
 	// Test success
-	m := make(map[string]struct{})
-	iterFunc := recordInMap(m)
-	require.NoError(t, iterFields(
-		reflect.ValueOf(&c),
-		"prefix",
-		iterFunc,
-	))
-	exp := map[string]struct{}{
-		"PREFIX_HEY_YOYO": struct{}{},
-		"PREFIX_HEY_YO":   struct{}{},
-		"PREFIX_HI":       struct{}{},
-		"PREFIX_HIEMPTY":  struct{}{},
-		"PREFIX_QQ":       struct{}{},
+	m := make(Map)
+	require.NoError(t, iterFields(reflect.ValueOf(&c), nil, mapRecorder(m)))
+	fmt.Println(m)
+
+	expected := [][]string{
+		[]string{"bool", "Hi"},
+		[]string{"bool", "HiEmpty"},
+		[]string{"string", "QQ"},
+		[]string{"int", "YO", "Hey"},
+		[]string{"int", "YOYO", "Hey"},
 	}
-	require.Equal(t, exp, m)
+	for _, path := range expected {
+		require.Equal(t, path[0], m.In(path[2:]...).Get(path[1]), path)
+	}
 }
