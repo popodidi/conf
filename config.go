@@ -10,7 +10,7 @@ import (
 // Config defines the config struct.
 type Config struct {
 	ptr interface{}
-	m   map[string]interface{}
+	m   Map
 }
 
 // New return a config instance.
@@ -20,26 +20,52 @@ func New(ptr interface{}) *Config {
 	}
 }
 
-// Load loads the config from readers.
+// Load loads the config from flattened readers.
+//
+// Deprecated: Use LoadNested instead to support nested readers to have better
+// readability in nested readers, such as YAML files.
 func (c *Config) Load(readers []Reader) error {
-	c.m = make(map[string]interface{})
-	return iterFields(reflect.ValueOf(c.ptr), "",
-		func(field reflect.Value, typeField reflect.StructField, key string) (
-			err error) {
+	return c.load(readers, false)
+}
+
+// LoadNested loads the config from nested readers.
+func (c *Config) LoadNested(readers []Reader) error {
+	return c.load(readers, true)
+}
+
+func (c *Config) load(readers []Reader, nested bool) error {
+	c.m = make(Map)
+	return iterFields(reflect.ValueOf(c.ptr), nil,
+		func(
+			field reflect.Value, typeField reflect.StructField,
+			key string, path ...string) (
+			err error,
+		) {
 			// cache loaded value in the map
 			var finalVal reflect.Value
 			defer func() {
 				if err != nil {
 					return
 				}
-				c.m[key] = finalVal.Interface()
+				err = c.m.MustIn(path...).Set(key, finalVal.Interface())
 			}()
 
 			tag, err := parseTag(typeField.Tag.Get("conf"))
 			if err != nil {
 				return
 			}
-			value, exists := c.read(key, readers)
+
+			// XXX: backward compatible for non-nested config
+			var (
+				value  string
+				exists bool
+			)
+			if nested {
+				value, exists = c.read(readers, key, path...)
+			} else {
+				oldKey := toOldKey(key, path...)
+				value, exists = c.read(readers, oldKey)
+			}
 
 			// return error for required config not found
 			if !exists && !tag.hasDefault {
@@ -66,16 +92,23 @@ func (c *Config) Load(readers []Reader) error {
 	)
 }
 
-// Map returns the loaded config c as golang map type.
-func (c *Config) Map() (map[string]interface{}, error) {
+// Map returns a flattened map of the loaded config.
+//
+// Deprecated: Use NestedMap instead to support nested readers, such as YAML
+// files.
+func (c *Config) Map() (Map, error) {
 	if c.m == nil {
 		return nil, ErrConfigNotLoaded
 	}
-	m := make(map[string]interface{})
-	for k, v := range c.m {
-		m[k] = v
+	return c.m.FlattenedClone(toOldKey)
+}
+
+// NestedMap returns a nested map of the loaded config.
+func (c *Config) NestedMap() (Map, error) {
+	if c.m == nil {
+		return nil, ErrConfigNotLoaded
 	}
-	return m, nil
+	return c.m.Clone()
 }
 
 // Export exports the loaded config c to writer with exporter.
@@ -87,14 +120,14 @@ func (c *Config) Export(exporter Exporter, writer io.Writer) error {
 	return exporter.Export(m, writer)
 }
 
-// Template returns a template string with exporter format.
+// Template returns a template string with exporter format and flattened map.
 func (c *Config) Template(exporter Exporter) (string, error) {
-	m := make(map[string]interface{})
-	err := iterFields(reflect.ValueOf(c.ptr), "",
-		func(field reflect.Value, typeField reflect.StructField, key string) error {
-			m[key] = typeField.Type.Name()
-			return nil
-		})
+	m := make(Map)
+	err := iterFields(reflect.ValueOf(c.ptr), nil, mapRecorder(m))
+	if err != nil {
+		return "", err
+	}
+	m, err = m.FlattenedClone(toOldKey)
 	if err != nil {
 		return "", err
 	}
@@ -106,10 +139,25 @@ func (c *Config) Template(exporter Exporter) (string, error) {
 	return b.String(), nil
 }
 
-func (c *Config) read(key string, readers []Reader) (
+// NestedTemplate returns a template string with exporter format and nested map.
+func (c *Config) NestedTemplate(exporter Exporter) (string, error) {
+	m := make(Map)
+	err := iterFields(reflect.ValueOf(c.ptr), nil, mapRecorder(m))
+	if err != nil {
+		return "", err
+	}
+	var b strings.Builder
+	err = exporter.Export(m, &b)
+	if err != nil {
+		return "", err
+	}
+	return b.String(), nil
+}
+
+func (c *Config) read(readers []Reader, key string, path ...string) (
 	val string, exists bool) {
 	for _, reader := range readers {
-		val, exists = reader.Read(key)
+		val, exists = reader.Read(key, path...)
 		if exists {
 			return
 		}

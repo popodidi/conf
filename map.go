@@ -114,3 +114,30 @@ func (m Map) iter(prepath []string,
 	}
 	return true
 }
+
+// Clone returns a shallow copy of the map.
+func (m Map) Clone() (clone Map, err error) {
+	clone = make(Map)
+	m.Iter(func(key string, val interface{}, path ...string) bool {
+		err = clone.MustIn(path...).Set(key, val)
+		return err == nil
+	})
+	if err != nil {
+		clone = nil
+	}
+	return
+}
+
+// FlattenedClone returns a flattened shallow copy of the map.
+func (m Map) FlattenedClone(keyFn func(key string, path ...string) string) (
+	clone Map, err error) {
+	clone = make(Map)
+	m.Iter(func(key string, val interface{}, path ...string) bool {
+		err = clone.Set(keyFn(key, path...), val)
+		return err == nil
+	})
+	if err != nil {
+		clone = nil
+	}
+	return
+}

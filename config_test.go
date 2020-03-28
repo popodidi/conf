@@ -38,6 +38,7 @@ func TestConfMap(t *testing.T) {
 	_, err := cfg.Map()
 	assert.Error(t, err, ErrConfigNotLoaded)
 	assert.NoError(t, cfg.Load([]Reader{MockSrc}))
+
 	m, err := cfg.Map()
 	assert.NoError(t, err)
 	assert.Equal(t, true, m["HI"])
@@ -45,4 +46,12 @@ func TestConfMap(t *testing.T) {
 	assert.Equal(t, "str", m["QQ"])
 	assert.Equal(t, 87, m["HEY_YO"])
 	assert.Equal(t, 1, m["HEY_YOYO"])
+
+	m, err = cfg.NestedMap()
+	assert.NoError(t, err)
+	assert.Equal(t, true, m.Get("Hi"))
+	assert.Equal(t, true, m.Get("HiEmpty"))
+	assert.Equal(t, "str", m.Get("QQ"))
+	assert.Equal(t, 87, m.In("Hey").Get("YO"))
+	assert.Equal(t, 1, m.In("Hey").Get("YOYO"))
 }
