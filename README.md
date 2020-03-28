@@ -58,7 +58,9 @@ The `conf` package currently supports the following sources.
 
 - `env` - `env` reads from environment variables and always flattens struct
   field names into `UPPERCASE_WITH_UNDERCASE` as the variable names.
-- `yaml` - `yaml` read config from a YAML. `yaml` supports both flattened and
+- `yaml` - `yaml` reads config from a YAML. `yaml` supports both flattened and
+  nested structures as flatted or nested functions are called.
+- `json` - `json` reads config from a JSON. `json` supports both flattened and
   nested structures as flatted or nested functions are called.
 
 ## Config Struct
