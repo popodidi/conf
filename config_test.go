@@ -5,10 +5,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/popodidi/conf/source"
 	"github.com/popodidi/conf/source/mock"
 	"github.com/popodidi/conf/source/yaml"
-	"github.com/stretchr/testify/assert"
 )
 
 type testSubCfg struct {

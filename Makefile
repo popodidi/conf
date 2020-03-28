@@ -8,7 +8,7 @@ GOIMPORTS    ?= goimports
 GOLANCI_LINT ?= $(or $(wildcard $(GITROOT)/bin/golangci-lint), $(shell which golangci-lint))
 GOLINT       ?= $(GOLANCI_LINT) run
 
-GO_IMPORT_PATH = github.com/popodidi/log
+GO_IMPORT_PATH = github.com/popodidi/conf
 
 define INSTALL_RULE
 install-$1:
