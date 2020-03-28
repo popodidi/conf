@@ -5,8 +5,6 @@ import (
 	"io"
 	"reflect"
 	"strings"
-
-	"github.com/popodidi/conf/source"
 )
 
 // Config defines the config struct.
@@ -23,7 +21,7 @@ func New(ptr interface{}) *Config {
 }
 
 // Load loads the config from readers.
-func (c *Config) Load(readers []source.Reader) error {
+func (c *Config) Load(readers []Reader) error {
 	c.m = make(map[string]interface{})
 	return iterFields(reflect.ValueOf(c.ptr), "",
 		func(field reflect.Value, typeField reflect.StructField, key string) (
@@ -87,7 +85,7 @@ func (c *Config) Map() (map[string]interface{}, error) {
 }
 
 // Export exports the loaded config c to writer with exporter.
-func (c *Config) Export(exporter source.Exporter, writer io.Writer) error {
+func (c *Config) Export(exporter Exporter, writer io.Writer) error {
 	m, err := c.Map()
 	if err != nil {
 		return err
@@ -96,7 +94,7 @@ func (c *Config) Export(exporter source.Exporter, writer io.Writer) error {
 }
 
 // Template returns a template string with exporter format.
-func (c *Config) Template(exporter source.Exporter) (string, error) {
+func (c *Config) Template(exporter Exporter) (string, error) {
 	m := make(map[string]interface{})
 	err := iterFields(reflect.ValueOf(c.ptr), "",
 		func(field reflect.Value, typeField reflect.StructField, key string) error {
@@ -114,7 +112,7 @@ func (c *Config) Template(exporter source.Exporter) (string, error) {
 	return b.String(), nil
 }
 
-func (c *Config) read(key string, readers []source.Reader) (
+func (c *Config) read(key string, readers []Reader) (
 	val string, exists bool) {
 	for _, reader := range readers {
 		val, exists = reader.Read(key)

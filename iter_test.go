@@ -18,7 +18,7 @@ func recordInMap(m map[string]struct{}) func(field reflect.Value,
 }
 
 func TestIter(t *testing.T) {
-	var c testCfg
+	var c TestCfg
 	// Test err
 	err := iterFields(
 		reflect.ValueOf(c),

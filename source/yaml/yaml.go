@@ -7,16 +7,16 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/popodidi/conf/source"
+	"github.com/popodidi/conf"
 )
 
 // New returns a Yaml file source.
-func New(path string) source.Interface {
+func New(path string) conf.Source {
 	return &yml{path: path}
 }
 
 // NewExporter returns an yaml exporter.
-func NewExporter() source.Exporter {
+func NewExporter() conf.Exporter {
 	return &exporter{}
 }
 
@@ -25,7 +25,7 @@ type yml struct {
 	path string
 }
 
-func (y *yml) Read(key string) (value string, exists bool) {
+func (y *yml) Read(key string, path ...string) (value string, exists bool) {
 	b, err := ioutil.ReadFile(y.path)
 	if err != nil {
 		return
@@ -35,18 +35,34 @@ func (y *yml) Read(key string) (value string, exists bool) {
 	if err != nil {
 		return
 	}
-	var val interface{}
-	val, exists = m[key]
-	if !exists {
+	return y.read(m, key, path...)
+}
+
+func (y *yml) read(m map[string]interface{}, key string, path ...string) (
+	value string, exists bool) {
+	if len(path) == 0 {
+		var val interface{}
+		val, exists = m[key]
+		if !exists {
+			return
+		}
+		value = fmt.Sprintf("%v", val)
 		return
 	}
-	value = fmt.Sprintf("%v", val)
-	return
+	sub, ok := m[path[0]]
+	if !ok {
+		return
+	}
+	subM, ok := sub.(map[string]interface{})
+	if !ok {
+		return
+	}
+	return y.read(subM, key, path[1:]...)
 }
 
 type exporter struct{}
 
-func (e *exporter) Export(m map[string]interface{}, writer io.Writer) error {
+func (e *exporter) Export(m conf.Map, writer io.Writer) error {
 	b, err := yaml.Marshal(m)
 	if err != nil {
 		return err
