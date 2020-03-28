@@ -6,6 +6,19 @@ import (
 	"strconv"
 )
 
+// ParseValue parses str in to value.
+func ParseValue(kind reflect.Kind, str string) (v reflect.Value, err error) {
+	// parse value
+	valuer, ok := valuers[kind]
+	if !ok {
+		err = ErrUnsupportedType
+		return
+	}
+
+	v, err = valuer(str)
+	return
+}
+
 type valuer func(string) (reflect.Value, error)
 
 var valuers = map[reflect.Kind]valuer{

@@ -30,7 +30,7 @@ func (y *yml) Read(key string, path ...string) (value string, exists bool) {
 	if err != nil {
 		return
 	}
-	var m map[string]interface{}
+	var m map[interface{}]interface{}
 	err = yaml.Unmarshal(b, &m)
 	if err != nil {
 		return
@@ -38,7 +38,7 @@ func (y *yml) Read(key string, path ...string) (value string, exists bool) {
 	return y.read(m, key, path...)
 }
 
-func (y *yml) read(m map[string]interface{}, key string, path ...string) (
+func (y *yml) read(m map[interface{}]interface{}, key string, path ...string) (
 	value string, exists bool) {
 	if len(path) == 0 {
 		var val interface{}
@@ -53,7 +53,7 @@ func (y *yml) read(m map[string]interface{}, key string, path ...string) (
 	if !ok {
 		return
 	}
-	subM, ok := sub.(map[string]interface{})
+	subM, ok := sub.(map[interface{}]interface{})
 	if !ok {
 		return
 	}

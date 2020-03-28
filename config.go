@@ -53,13 +53,7 @@ func (c *Config) Load(readers []Reader) error {
 			}
 
 			// parse value
-			valuer, ok := valuers[field.Kind()]
-			if !ok {
-				err = ErrUnsupportedType
-				return
-			}
-
-			finalVal, err = valuer(value)
+			finalVal, err = ParseValue(field.Kind(), value)
 			if err != nil {
 				return
 			}

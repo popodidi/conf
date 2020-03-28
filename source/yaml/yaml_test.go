@@ -1,31 +1,41 @@
 package yaml
 
 import (
-	"strings"
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 
-	"github.com/popodidi/conf"
+	"github.com/popodidi/conf/conftest"
 )
 
-func TestExport(t *testing.T) {
-	var c conf.TestCfg
-	var b strings.Builder
-	cfg := conf.New(&c)
-	assert.NoError(t, cfg.Load([]conf.Reader{conf.MockSrc}))
-	assert.NoError(t, cfg.Export(NewExporter(), &b))
-	expected := "HEY_YO: 87\nHEY_YOYO: 1\nHI: true\nHIEMPTY: true\nQQ: str\n"
-	assert.Equal(t, expected, b.String())
+func TestReader(t *testing.T) {
+	ymlPath, clean := prepareYml(t)
+	defer clean()
+
+	conftest.ReaderTest(t, New(ymlPath))
 }
 
-func TestTemplate(t *testing.T) {
-	var c conf.TestCfg
-	cfg := conf.New(&c)
-	assert.NoError(t, cfg.Load([]conf.Reader{conf.MockSrc}))
-	tmpl, err := cfg.Template(NewExporter())
-	assert.NoError(t, err)
-	expected := "HEY_YO: int\n" +
-		"HEY_YOYO: int\nHI: bool\nHIEMPTY: bool\nQQ: string\n"
-	assert.Equal(t, expected, tmpl)
+func TestExport(t *testing.T) {
+	expected := "a: b\nc:\n  d: e\nf:\n  g:\n    h: i\nj:\n  k:\n    float: 1.234\n    int: 1\n    str: m\n" // nolint: lll
+	conftest.ExporterTest(t, expected, &exporter{})
+}
+
+func prepareYml(t *testing.T) (ymlPath string, clean func()) {
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+	ymlPath = filepath.Join(dir,
+		fmt.Sprintf("test_conf_%d.yml", time.Now().UnixNano()))
+	f, err := os.Create(ymlPath)
+	require.NoError(t, err)
+	enc := yaml.NewEncoder(f)
+	require.NoError(t, enc.Encode(conftest.MockConf))
+	clean = func() {
+		require.NoError(t, os.Remove(ymlPath))
+	}
+	return
 }
