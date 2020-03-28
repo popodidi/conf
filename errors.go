@@ -4,6 +4,7 @@ import "errors"
 
 // Exported Errors.
 var (
+	// Config errors
 	ErrCantAddr        = errors.New("value can't addr")
 	ErrCantInterface   = errors.New("value can't interface")
 	ErrConfigNotFound  = errors.New("config not found")
@@ -15,4 +16,10 @@ var (
 	ErrInvalidValue    = errors.New("invalid config value")
 	ErrNilConfig       = errors.New("nil config")
 	ErrUnsupportedType = errors.New("unsupported type")
+
+	// Map errors
+	ErrInvalidPath     = errors.New("invalid path")
+	ErrUnexpectedValue = errors.New("unexpected value")
+	ErrNilMap          = errors.New("nil map")
+	ErrValueType       = errors.New("map value should be either string or Map")
 )
