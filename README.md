@@ -104,8 +104,9 @@ type config struct {
 The `conf` package currently supports the following field types.
 
 - `string`
-- `int`
-- `float64`
+- `int(8/16/32/64)`
+- `uint(8/16/32/64)`
+- `float(32/64)64`
 - `bool`
 
 ## Flattened / Nested

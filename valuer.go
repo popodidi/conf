@@ -8,13 +8,11 @@ import (
 
 // ParseValue parses str in to value.
 func ParseValue(kind reflect.Kind, str string) (v reflect.Value, err error) {
-	// parse value
 	valuer, ok := valuers[kind]
 	if !ok {
 		err = ErrUnsupportedType
 		return
 	}
-
 	v, err = valuer(str)
 	return
 }
@@ -23,56 +21,66 @@ type valuer func(string) (reflect.Value, error)
 
 var valuers = map[reflect.Kind]valuer{
 	reflect.String:  strValuer,
-	reflect.Int:     intValuer,
-	reflect.Float64: float64Valuer,
+	reflect.Int:     intValuerGenerator(func(i int64) interface{} { return int(i) }),         // nolint: lll
+	reflect.Int8:    intValuerGenerator(func(i int64) interface{} { return int8(i) }),        // nolint: lll
+	reflect.Int16:   intValuerGenerator(func(i int64) interface{} { return int16(i) }),       // nolint: lll
+	reflect.Int32:   intValuerGenerator(func(i int64) interface{} { return int32(i) }),       // nolint: lll
+	reflect.Int64:   intValuerGenerator(func(i int64) interface{} { return i }),              // nolint: lll
+	reflect.Uint:    uintValuerGenerator(func(i uint64) interface{} { return uint(i) }),      // nolint: lll
+	reflect.Uint8:   uintValuerGenerator(func(i uint64) interface{} { return uint8(i) }),     // nolint: lll
+	reflect.Uint16:  uintValuerGenerator(func(i uint64) interface{} { return uint16(i) }),    // nolint: lll
+	reflect.Uint32:  uintValuerGenerator(func(i uint64) interface{} { return uint32(i) }),    // nolint: lll
+	reflect.Uint64:  uintValuerGenerator(func(i uint64) interface{} { return i }),            // nolint: lll
+	reflect.Float32: floatValuerGenerator(func(f float64) interface{} { return float32(f) }), // nolint: lll
+	reflect.Float64: floatValuerGenerator(func(f float64) interface{} { return f }),          // nolint: lll
 	reflect.Bool:    boolValuer,
 	// nolint: godox
 	// TODO: support more kinds.
-	// reflect.Int8
-	// reflect.Int16
-	// reflect.Int32
-	// reflect.Int64
-	// reflect.Uint
-	// reflect.Uint8
-	// reflect.Uint16
-	// reflect.Uint32
-	// reflect.Uint64
-	// reflect.Uintptr
-	// reflect.Float32
 	// reflect.Complex64
 	// reflect.Complex128
 	// reflect.Array
 	// reflect.Chan
-	// reflect.Func
-	// reflect.Interface
-	// reflect.Map
-	// reflect.Ptr
 	// reflect.Slice
-	// reflect.Struct
 }
 
 func strValuer(str string) (reflect.Value, error) {
 	return reflect.ValueOf(str), nil
 }
 
-func intValuer(str string) (reflect.Value, error) {
-	i, err := strconv.ParseInt(str, 0, 0)
-	if err != nil {
-		err = fmt.Errorf(
-			"failed to parse int from \"%s\". %v", str, ErrInvalidValue)
-		return reflect.Value{}, err
+func intValuerGenerator(fn func(i int64) interface{}) valuer {
+	return func(str string) (reflect.Value, error) {
+		i, err := strconv.ParseInt(str, 0, 0)
+		if err != nil {
+			err = fmt.Errorf(
+				"failed to parse int from \"%s\". %v", str, ErrInvalidValue)
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(fn(i)), nil
 	}
-	return reflect.ValueOf(int(i)), nil
 }
 
-func float64Valuer(str string) (reflect.Value, error) {
-	f, err := strconv.ParseFloat(str, 64)
-	if err != nil {
-		err = fmt.Errorf(
-			"failed to parse float from \"%s\". %v", str, ErrInvalidValue)
-		return reflect.Value{}, err
+func uintValuerGenerator(fn func(i uint64) interface{}) valuer {
+	return func(str string) (reflect.Value, error) {
+		ui, err := strconv.ParseUint(str, 0, 0)
+		if err != nil {
+			err = fmt.Errorf(
+				"failed to parse uint from \"%s\". %v", str, ErrInvalidValue)
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(fn(ui)), nil
 	}
-	return reflect.ValueOf(f), nil
+}
+
+func floatValuerGenerator(fn func(i float64) interface{}) valuer {
+	return func(str string) (reflect.Value, error) {
+		f, err := strconv.ParseFloat(str, 64)
+		if err != nil {
+			err = fmt.Errorf(
+				"failed to parse float from \"%s\". %v", str, ErrInvalidValue)
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(fn(f)), nil
+	}
 }
 
 func boolValuer(str string) (reflect.Value, error) {
