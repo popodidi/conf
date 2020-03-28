@@ -34,7 +34,11 @@ func (e *env) Export(m conf.Map, writer io.Writer) error {
 }
 
 func (e *env) varName(key string, path ...string) string {
+	key = strings.ToUpper(key)
+	if len(path) == 0 {
+		return key
+	}
 	name := strings.Join(path, sep)
 	name = strings.ToUpper(name)
-	return name + sep + strings.ToUpper(key)
+	return name + sep + key
 }
