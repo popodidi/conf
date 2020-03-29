@@ -2,7 +2,6 @@ package conf
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -18,7 +17,6 @@ func TestIter(t *testing.T) {
 	// Test success
 	m := make(Map)
 	require.NoError(t, iterFields(reflect.ValueOf(&c), nil, mapRecorder(m)))
-	fmt.Println(m)
 
 	expected := [][]string{
 		[]string{"bool", "Hi"},

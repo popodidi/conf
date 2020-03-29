@@ -40,9 +40,9 @@ func Example_source() {
 		env.New(),
 		yaml.New("config.yaml"),
 		memory.New(map[string]interface{}{
-			"STR":   "??",
-			"INT":   "12",
-			"FLOAT": "3.456",
+			"Str":   "??",
+			"Int":   "12",
+			"Float": "3.456",
 		}),
 	)
 	if err != nil {

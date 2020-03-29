@@ -12,10 +12,10 @@ func TestConfLoad(t *testing.T) {
 
 	cfg := New(&c)
 	assert.True(t,
-		errors.Is(cfg.Load([]Reader{InvalidSrc}), ErrInvalidValue))
+		errors.Is(cfg.Load(InvalidSrc), ErrInvalidValue))
 	assert.True(t,
-		errors.Is(cfg.Load([]Reader{MissingSrc}), ErrConfigNotFound))
-	assert.NoError(t, cfg.Load([]Reader{MockSrc}))
+		errors.Is(cfg.Load(MissingSrc), ErrConfigNotFound))
+	assert.NoError(t, cfg.Load(MockSrc))
 	assert.Equal(t, true, c.Hi)
 	assert.Equal(t, true, c.HiEmpty)
 	assert.Equal(t, "str", c.QQ)
@@ -25,11 +25,11 @@ func TestConfLoad(t *testing.T) {
 	var invalidValueC InvalidValueCfg
 	ivCfg := New(&invalidValueC)
 	assert.True(t,
-		errors.Is(ivCfg.Load([]Reader{MockSrc}), ErrUnsupportedType))
+		errors.Is(ivCfg.Load(MockSrc), ErrUnsupportedType))
 
 	var invalidTagC InvalidTagCfg
 	itCfg := New(&invalidTagC)
-	assert.True(t, errors.Is(itCfg.Load([]Reader{MockSrc}), ErrInvalidTag))
+	assert.True(t, errors.Is(itCfg.Load(MockSrc), ErrInvalidTag))
 }
 
 func TestConfMap(t *testing.T) {
@@ -37,17 +37,9 @@ func TestConfMap(t *testing.T) {
 	cfg := New(&c)
 	_, err := cfg.Map()
 	assert.Error(t, err, ErrConfigNotLoaded)
-	assert.NoError(t, cfg.Load([]Reader{MockSrc}))
+	assert.NoError(t, cfg.Load(MockSrc))
 
 	m, err := cfg.Map()
-	assert.NoError(t, err)
-	assert.Equal(t, true, m["HI"])
-	assert.Equal(t, true, m["HIEMPTY"])
-	assert.Equal(t, "str", m["QQ"])
-	assert.Equal(t, 87, m["HEY_YO"])
-	assert.Equal(t, 1, m["HEY_YOYO"])
-
-	m, err = cfg.NestedMap()
 	assert.NoError(t, err)
 	assert.Equal(t, true, m.Get("Hi"))
 	assert.Equal(t, true, m.Get("HiEmpty"))

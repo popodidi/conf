@@ -21,19 +21,7 @@ func New(ptr interface{}) *Config {
 }
 
 // Load loads the config from flattened readers.
-//
-// Deprecated: Use LoadNested instead to support nested readers to have better
-// readability in nested readers, such as YAML files.
-func (c *Config) Load(readers []Reader) error {
-	return c.load(readers, false)
-}
-
-// LoadNested loads the config from nested readers.
-func (c *Config) LoadNested(readers []Reader) error {
-	return c.load(readers, true)
-}
-
-func (c *Config) load(readers []Reader, nested bool) error {
+func (c *Config) Load(readers ...Reader) error {
 	c.m = make(Map)
 	return iterFields(reflect.ValueOf(c.ptr), nil,
 		func(
@@ -55,17 +43,7 @@ func (c *Config) load(readers []Reader, nested bool) error {
 				return
 			}
 
-			// XXX: backward compatible for non-nested config
-			var (
-				value  string
-				exists bool
-			)
-			if nested {
-				value, exists = c.read(readers, key, path...)
-			} else {
-				oldKey := toOldKey(key, path...)
-				value, exists = c.read(readers, oldKey)
-			}
+			value, exists := c.read(readers, key, path...)
 
 			// return error for required config not found
 			if !exists && !tag.hasDefault {
@@ -92,19 +70,8 @@ func (c *Config) load(readers []Reader, nested bool) error {
 	)
 }
 
-// Map returns a flattened map of the loaded config.
-//
-// Deprecated: Use NestedMap instead to support nested readers, such as YAML
-// files.
+// Map returns a map of the loaded config.
 func (c *Config) Map() (Map, error) {
-	if c.m == nil {
-		return nil, ErrConfigNotLoaded
-	}
-	return c.m.FlattenedClone(toOldKey)
-}
-
-// NestedMap returns a nested map of the loaded config.
-func (c *Config) NestedMap() (Map, error) {
 	if c.m == nil {
 		return nil, ErrConfigNotLoaded
 	}
@@ -120,27 +87,8 @@ func (c *Config) Export(exporter Exporter, writer io.Writer) error {
 	return exporter.Export(m, writer)
 }
 
-// Template returns a template string with exporter format and flattened map.
+//Template returns a template string with exporter format and nested map.
 func (c *Config) Template(exporter Exporter) (string, error) {
-	m := make(Map)
-	err := iterFields(reflect.ValueOf(c.ptr), nil, mapRecorder(m))
-	if err != nil {
-		return "", err
-	}
-	m, err = m.FlattenedClone(toOldKey)
-	if err != nil {
-		return "", err
-	}
-	var b strings.Builder
-	err = exporter.Export(m, &b)
-	if err != nil {
-		return "", err
-	}
-	return b.String(), nil
-}
-
-// NestedTemplate returns a template string with exporter format and nested map.
-func (c *Config) NestedTemplate(exporter Exporter) (string, error) {
 	m := make(Map)
 	err := iterFields(reflect.ValueOf(c.ptr), nil, mapRecorder(m))
 	if err != nil {

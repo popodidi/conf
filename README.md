@@ -32,12 +32,7 @@ func main() {
 	// load from sources
 	var cfg config
 	var err error
-	flattened := true // false
-	if flattened {
-		err = conf.Load(&cfg, env.New(), yaml.New("basic.yaml"))       // flattened version
-	} else {
-		err = conf.LoadNested(&cfg, env.New(), yaml.New("basic.yaml")) // nested version
-	}
+	err = conf.Load(&cfg, env.New(), yaml.New("basic.yaml"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,8 +44,8 @@ func main() {
 }
 ```
 
-The `Load`/`LoadNested` functions accept multiple sources. It falls back to the
-next one if the value is not found. `conf` uses reflection to get config keys.
+The `Load` functions accept multiple sources. It falls back to the next one if
+the value is not found. `conf` uses reflection to get config keys.
 
 ## Sources
 
@@ -58,10 +53,8 @@ The `conf` package currently supports the following sources.
 
 - `env` - `env` reads from environment variables and always flattens struct
   field names into `UPPERCASE_WITH_UNDERCASE` as the variable names.
-- `yaml` - `yaml` reads config from a YAML. `yaml` supports both flattened and
-  nested structures as flatted or nested functions are called.
-- `json` - `json` reads config from a JSON. `json` supports both flattened and
-  nested structures as flatted or nested functions are called.
+- `yaml` - `yaml` reads config from a YAML file.
+- `json` - `json` reads config from a JSON file.
 
 ## Config Struct
 
@@ -76,17 +69,30 @@ type config struct {
 }
 ```
 
-The corresponding configuration YAML file will then be
+### ENV
 
-```yaml
-# Flattened
+```
 YO: true
 HEY_HI: 1
+```
 
-# Nested
+### YAML
+
+```yaml
 Yo: true
 Hey:
   Hi: 1
+```
+
+### JSON
+
+```json
+{
+  "Yo": true,
+  "Hey": {
+    "Hi": 1
+  }
+}
 ```
 
 ### Default value
@@ -108,45 +114,3 @@ The `conf` package currently supports the following field types.
 - `uint(8/16/32/64)`
 - `float(32/64)64`
 - `bool`
-
-## Flattened / Nested
-
-### Flattened Functions
-
-The flattened functions of `conf` flattens every nested struct and formats keys
-into `UPPERCASE_WITH_UNDERSCORE` to support nested structs.
-
-> The very first version of `conf` flattens every nested struct by default. It
-> was in this way because at the very beginning, `conf` was to parse only from
-> environment variables. As more sources are added, the implicit flattening is no
-> longer a good implementation. As a result, the source interface was updated to
-> better support nested structs. At the same time, we still keep the original
-> functions, which flatten config keys implicitly, for backward compatibility.
-
-```go
-func Load(config interface{}, readers ...Reader) (err error)
-func Template(config interface{}, exporter Exporter)
-
-func (c *Config) Map() (Map, error)
-func (c *Config) Load(readers []Reader) error
-func (c *Config) Template(exporter Exporter) (string, error)
-```
-
-### Nested Functions
-
-With the nested functions, the flattening will be left to the implementation of
-sources that do not support nesting, such `env`. For nested sources, such as
-`yaml`, it is recommended to use nested functions instead.
-
-```go
-func LoadNested(config interface{}, readers ...Reader) (err error)
-func NestedTemplate(config interface{}, exporter Exporter)
-
-func (c *Config) NestedMap() (Map, error)
-func (c *Config) LoadNested(readers []Reader) error
-func (c *Config) NestedTemplate(exporter Exporter) (string, error)
-```
-
-> Since the flatten-formatting is implemented by the `env` source, it will just
-> work to have nesting and not nesting sources together,
-> `conf.LoadNested(&cfg, env.New(), yaml.New("my_conf.yaml"))`.
