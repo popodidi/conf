@@ -38,7 +38,11 @@ func (m Map) In(path ...string) Map {
 	}
 	subM, ok := sub.(Map)
 	if !ok {
-		return nil
+		subNativeM, ok := sub.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		subM = Map(subNativeM)
 	}
 	return subM.In(path[1:]...)
 }
@@ -51,12 +55,19 @@ func (m Map) MustIn(path ...string) Map {
 		return m
 	}
 	var (
-		sub  interface{}
-		subM Map
-		ok   bool
+		sub        interface{}
+		subM       Map
+		subNativeM map[string]interface{}
+		ok         bool
 	)
 	if sub, ok = m[path[0]]; ok {
 		subM, ok = sub.(Map)
+		if !ok {
+			subNativeM, ok = sub.(map[string]interface{})
+			if ok {
+				subM = Map(subNativeM)
+			}
+		}
 	}
 	if !ok {
 		subM = make(Map)
@@ -120,20 +131,6 @@ func (m Map) Clone() (clone Map, err error) {
 	clone = make(Map)
 	m.Iter(func(key string, val interface{}, path ...string) bool {
 		err = clone.MustIn(path...).Set(key, val)
-		return err == nil
-	})
-	if err != nil {
-		clone = nil
-	}
-	return
-}
-
-// FlattenedClone returns a flattened shallow copy of the map.
-func (m Map) FlattenedClone(keyFn func(key string, path ...string) string) (
-	clone Map, err error) {
-	clone = make(Map)
-	m.Iter(func(key string, val interface{}, path ...string) bool {
-		err = clone.Set(keyFn(key, path...), val)
 		return err == nil
 	})
 	if err != nil {

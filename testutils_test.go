@@ -35,9 +35,9 @@ var MockSrc = NewMock(
 	map[string]interface{}{
 		"Hi": "true",
 		"QQ": "str",
-		"Hey": Map(map[string]interface{}{
+		"Hey": map[string]interface{}{
 			"YO": "87",
-		}),
+		},
 	},
 )
 
@@ -57,9 +57,9 @@ var InvalidSrc = NewMock(
 	map[string]interface{}{
 		"Hi": "hello",
 		"QQ": "str",
-		"Hey": Map(map[string]interface{}{
+		"Hey": map[string]interface{}{
 			"YO": "87",
-		}),
+		},
 	},
 )
 
