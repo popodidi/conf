@@ -18,7 +18,6 @@ var (
 	ErrUnsupportedType = errors.New("unsupported type")
 
 	// Map errors
-	ErrInvalidPath = errors.New("invalid path")
-	ErrNilMap      = errors.New("nil map")
-	ErrValueType   = errors.New("map value should be either string or Map")
+	ErrNilMap    = errors.New("nil map")
+	ErrValueType = errors.New("map value should be either string or Map")
 )

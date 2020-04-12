@@ -20,7 +20,7 @@ func New(ptr interface{}) *Config {
 	}
 }
 
-// Load loads the config from flattened readers.
+// Load loads the config from readers.
 func (c *Config) Load(readers ...Reader) error {
 	c.m = make(Map)
 	return iterFields(reflect.ValueOf(c.ptr), nil,
