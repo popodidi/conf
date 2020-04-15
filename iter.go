@@ -32,7 +32,6 @@ func iterFields(ptrValue reflect.Value, prepath []string,
 
 	for i := 0; i < configType.NumField(); i++ {
 		v := configValue.Field(i)
-		v.CanAddr()
 		t := configType.Field(i)
 		path := append(prepath[:0:0], prepath...)
 		key := t.Name
