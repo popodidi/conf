@@ -20,7 +20,7 @@ func New(ptr interface{}) *Config {
 	}
 }
 
-// Load loads the config from readers.
+// Load loads the config from flattened readers.
 func (c *Config) Load(readers ...Reader) error {
 	c.m = make(Map)
 	return iterFields(reflect.ValueOf(c.ptr), nil,
@@ -30,12 +30,11 @@ func (c *Config) Load(readers ...Reader) error {
 			err error,
 		) {
 			// cache loaded value in the map
-			var finalVal reflect.Value
 			defer func() {
 				if err != nil {
 					return
 				}
-				err = c.m.MustIn(path...).Set(key, finalVal.Interface())
+				err = c.m.MustIn(path...).Set(key, field.Interface())
 			}()
 
 			tag, err := parseTag(typeField.Tag.Get("conf"))
@@ -57,14 +56,7 @@ func (c *Config) Load(readers ...Reader) error {
 			}
 
 			// parse value
-			finalVal, err = ParseValue(field.Kind(), value)
-			if err != nil {
-				return
-			}
-
-			// set value to ptr
-			field.Set(finalVal)
-			err = nil
+			err = Scan(field, value)
 			return
 		},
 	)

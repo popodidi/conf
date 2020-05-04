@@ -6,11 +6,38 @@ import (
 	"strconv"
 )
 
+// Scan scans the str into value.
+func Scan(val reflect.Value, str string) (err error) {
+	if isScanner(val) && val.CanInterface() {
+		if val.Type().Kind() == reflect.Ptr {
+			tmpPtr := reflect.New(val.Type().Elem())
+			err = tmpPtr.Interface().(Scanner).Scan(str)
+			if err != nil {
+				return
+			}
+			val.Set(tmpPtr)
+			return
+		}
+		err = val.Interface().(Scanner).Scan(str)
+		return
+	}
+	parsedVal, err := ParseValue(val.Kind(), str)
+	if err != nil {
+		return
+	}
+	val.Set(parsedVal)
+	return
+}
+
+func isScanner(val reflect.Value) bool {
+	return val.Type().Implements(reflect.TypeOf((*Scanner)(nil)).Elem())
+}
+
 // ParseValue parses str in to value.
 func ParseValue(kind reflect.Kind, str string) (v reflect.Value, err error) {
 	valuer, ok := valuers[kind]
 	if !ok {
-		err = ErrUnsupportedType
+		err = fmt.Errorf("kind %s. %w", kind, ErrUnsupportedType)
 		return
 	}
 	v, err = valuer(str)

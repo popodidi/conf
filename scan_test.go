@@ -3,9 +3,55 @@ package conf
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+type T time.Time
+
+var now = time.Now()
+
+func (t *T) Scan(str string) error {
+	*t = T(now)
+	return nil
+}
+
+type Str struct {
+	str string
+}
+
+func (s *Str) Scan(str string) error {
+	s.str = str
+	return nil
+}
+
+func TestScan(t *testing.T) {
+	{
+		var a struct {
+			Str string
+		}
+		require.NoError(t,
+			Scan(reflect.ValueOf(&a).Elem().FieldByName("Str"), "hello"))
+		require.Equal(t, "hello", a.Str)
+	}
+	{
+		var a struct {
+			T *T
+		}
+		require.NoError(t,
+			Scan(reflect.ValueOf(&a).Elem().FieldByName("T"), "hello"))
+		require.Equal(t, now, time.Time(*a.T))
+	}
+	{
+		var a struct {
+			Str *Str
+		}
+		require.NoError(t,
+			Scan(reflect.ValueOf(&a).Elem().FieldByName("Str"), "hello"))
+		require.Equal(t, "hello", a.Str.str)
+	}
+}
 
 func TestValuers(t *testing.T) {
 	cases := [][]interface{}{ // [kind, str, expected_value]

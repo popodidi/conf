@@ -19,3 +19,8 @@ type Reader interface {
 type Exporter interface {
 	Export(m Map, writer io.Writer) error
 }
+
+// Scanner defines the Scanner interface for custom scannable types.
+type Scanner interface {
+	Scan(str string) error
+}

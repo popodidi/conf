@@ -18,26 +18,26 @@ func iterFields(ptrValue reflect.Value, prepath []string,
 		return ErrNilConfig
 	}
 
-	configKind := ptrValue.Kind()
-	if configKind != reflect.Ptr {
+	ptrValueKind := ptrValue.Kind()
+	if ptrValueKind != reflect.Ptr {
 		return ErrConfigNotPtr
 	}
 
-	configValue := ptrValue.Elem()
-	configType := configValue.Type()
+	ptrValueElem := ptrValue.Elem()
+	ptrValueElemType := ptrValueElem.Type()
 
-	if configValue.Kind() != reflect.Struct {
+	if ptrValueElem.Kind() != reflect.Struct {
 		return ErrConfigNotStruct
 	}
 
-	for i := 0; i < configType.NumField(); i++ {
-		v := configValue.Field(i)
-		t := configType.Field(i)
+	for i := 0; i < ptrValueElemType.NumField(); i++ {
+		v := ptrValueElem.Field(i)
+		t := ptrValueElemType.Field(i)
 		path := append(prepath[:0:0], prepath...)
 		key := t.Name
 
 		// recursive call for struct fields
-		if v.Kind() == reflect.Struct {
+		if v.Kind() == reflect.Struct && !isScanner(v) {
 			if !v.CanAddr() {
 				return ErrCantAddr
 			}

@@ -107,10 +107,30 @@ type config struct {
 
 ### Supported Types
 
-The `conf` package currently supports the following field types.
+The `conf` package currently supports the following builtin field types.
 
 - `string`
 - `int(8/16/32/64)`
 - `uint(8/16/32/64)`
-- `float(32/64)64`
+- `float(32/64)`
 - `bool`
+
+### Custom Scanner
+
+By implementing the `conf.Scanner` interface, you can have custom type as a
+config field.
+
+```go
+type Str struct {
+	str string
+}
+
+func (s *Str) Scan(str string) error {
+	s.str = str
+	return nil
+}
+
+type Config struct  {
+	MyStr *Str
+}
+```
