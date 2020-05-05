@@ -1,10 +1,12 @@
 package conf_test
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/popodidi/conf"
 	"github.com/popodidi/conf/source/env"
+	"github.com/popodidi/conf/source/flag"
 	"github.com/popodidi/conf/source/memory"
 	"github.com/popodidi/conf/source/yaml"
 )
@@ -37,6 +39,7 @@ func Example_source() {
 
 	var cfg config
 	err := conf.Load(&cfg,
+		flag.New(),
 		env.New(),
 		yaml.New("config.yaml"),
 		memory.New(map[string]interface{}{
@@ -51,4 +54,19 @@ func Example_source() {
 	log.Println("cfg.Str", cfg.Str)
 	log.Println("cfg.Int", cfg.Int)
 	log.Println("cfg.Float", cfg.Float)
+}
+
+func Example_flagUsage() {
+	type config struct {
+		Str   string `conf:"usage:str is a string"`
+		Int   int
+		Float float64
+	}
+	flagSource := flag.New()
+	var cfg config
+	err := conf.Configure(&cfg, flagSource)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(flagSource.Usage())
 }
