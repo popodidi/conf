@@ -18,6 +18,7 @@ import (
 
 	"github.com/popodidi/conf"
 	"github.com/popodidi/conf/source/env"
+	"github.com/popodidi/conf/source/flag"
 	"github.com/popodidi/conf/source/yaml"
 )
 
@@ -32,7 +33,7 @@ func main() {
 	// load from sources
 	var cfg config
 	var err error
-	err = conf.Load(&cfg, env.New(), yaml.New("basic.yaml"))
+	err = conf.Load(&cfg, flag.New(), env.New(), yaml.New("basic.yaml"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -53,6 +54,7 @@ The `conf` package currently supports the following sources.
 
 - `env` - `env` reads from environment variables and always flattens struct
   field names into `UPPERCASE_WITH_UNDERCASE` as the variable names.
+- `flag` - `flag` configures command flags and read from command arguments.
 - `yaml` - `yaml` reads config from a YAML file.
 - `json` - `json` reads config from a JSON file.
 
@@ -76,6 +78,13 @@ YO: true
 HEY_HI: 1
 ```
 
+### FLAG
+
+```
+-yo=true
+-hey-hi=1
+```
+
 ### YAML
 
 ```yaml
@@ -88,12 +97,14 @@ Hey:
 
 ```json
 {
-  "Yo": true,
-  "Hey": {
-    "Hi": 1
-  }
+	"Yo": true,
+	"Hey": {
+		"Hi": 1
+	}
 }
 ```
+
+## Tags
 
 ### Default value
 
@@ -105,7 +116,19 @@ type config struct {
 }
 ```
 
-### Supported Types
+### Usage
+
+Usage tag string will be configured as the flag usage.
+
+```go
+type config struct {
+	Name string `conf:"default:default_name,usage:this is the name"`
+}
+```
+
+## Supported Types
+
+### Builtin Types
 
 The `conf` package currently supports the following builtin field types.
 
@@ -115,7 +138,7 @@ The `conf` package currently supports the following builtin field types.
 - `float(32/64)`
 - `bool`
 
-### Custom Scanner
+### Custom Types
 
 By implementing the `conf.Scanner` interface, you can have custom type as a
 config field.
