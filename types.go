@@ -2,6 +2,7 @@ package conf
 
 import (
 	"io"
+	"reflect"
 )
 
 // Source defines the source interface.
@@ -23,4 +24,29 @@ type Exporter interface {
 // Scanner defines the Scanner interface for custom scannable types.
 type Scanner interface {
 	Scan(str string) error
+}
+
+// Configurable defines the source/reader/exported that should be configured
+// beforehand, e.g. flag.
+type Configurable interface {
+	Configure(
+		t reflect.Type, tag FieldTag, key string, path ...string) error
+}
+
+// ConfigurableSource defines the configurable source.
+type ConfigurableSource interface {
+	Configurable
+	Source
+}
+
+// ConfigurableReader defines the configurable reader.
+type ConfigurableReader interface {
+	Configurable
+	Reader
+}
+
+// ConfigurableExporter defines the configurable exporter.
+type ConfigurableExporter interface {
+	Configurable
+	Exporter
 }

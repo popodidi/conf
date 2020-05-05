@@ -37,7 +37,7 @@ func iterFields(ptrValue reflect.Value, prepath []string,
 		key := t.Name
 
 		// recursive call for struct fields
-		if v.Kind() == reflect.Struct && !isScanner(v) {
+		if v.Kind() == reflect.Struct && !isScanner(v.Type()) {
 			if !v.CanAddr() {
 				return ErrCantAddr
 			}
