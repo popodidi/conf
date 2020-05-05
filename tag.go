@@ -6,28 +6,31 @@ import (
 
 const (
 	tagDefaultPrefix = "default:"
+	tagUsagePrefix   = "usage:"
 )
 
-type fieldTag struct {
-	hasDefault   bool
-	defaultValue string
+// FieldTag is the conf tag of a struct field
+type FieldTag struct {
+	Default *string
+	Usage   string
 }
 
-func parseTag(tagStr string) (ft fieldTag, err error) {
+func parseTag(tagStr string) (ft FieldTag, err error) {
 	if len(tagStr) == 0 {
 		return
 	}
 	tags := strings.Split(tagStr, ",")
 	for _, t := range tags {
-		// XXX: This should be a switch-case. However, since we only support one
-		// `default` tag at the moment, an if-else will do the work.
-		if strings.HasPrefix(t, tagDefaultPrefix) {
-			ft.hasDefault = true
-			ft.defaultValue = t[8:]
-			continue
+		switch {
+		case strings.HasPrefix(t, tagDefaultPrefix):
+			defaultValue := t[8:]
+			ft.Default = &defaultValue
+		case strings.HasPrefix(t, tagUsagePrefix):
+			ft.Usage = t[6:]
+		default:
+			err = ErrInvalidTag
+			return
 		}
-		err = ErrInvalidTag
-		return
 	}
 	return
 }

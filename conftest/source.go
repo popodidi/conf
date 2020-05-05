@@ -39,6 +39,11 @@ func ReaderTest(t *testing.T, reader conf.Reader) {
 		require.Equal(t, val, parsed.Interface(), "%v!=%v", val, parsed.Interface())
 		return true
 	})
+	{
+		value, ok := reader.Read("val", "doesn't", "not", "exist")
+		require.Empty(t, value)
+		require.False(t, ok)
+	}
 }
 
 // ExporterTest tests the exporter.

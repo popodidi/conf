@@ -8,29 +8,40 @@ import (
 
 // Scan scans the str into value.
 func Scan(val reflect.Value, str string) (err error) {
-	if isScanner(val) && val.CanInterface() {
-		if val.Type().Kind() == reflect.Ptr {
-			tmpPtr := reflect.New(val.Type().Elem())
-			err = tmpPtr.Interface().(Scanner).Scan(str)
-			if err != nil {
-				return
-			}
-			val.Set(tmpPtr)
-			return
-		}
-		err = val.Interface().(Scanner).Scan(str)
-		return
-	}
-	parsedVal, err := ParseValue(val.Kind(), str)
+	var v reflect.Value
+	v, err = ScanValue(val.Type(), str)
 	if err != nil {
 		return
 	}
-	val.Set(parsedVal)
+	val.Set(v)
 	return
 }
 
-func isScanner(val reflect.Value) bool {
-	return val.Type().Implements(reflect.TypeOf((*Scanner)(nil)).Elem())
+// ScanValue scans and returns value from string for a type.
+func ScanValue(t reflect.Type, str string) (val reflect.Value, err error) {
+	if isScanner(t) {
+		if t.Kind() == reflect.Ptr {
+			tmp := reflect.New(t.Elem())
+			err = tmp.Interface().(Scanner).Scan(str)
+			if err != nil {
+				return
+			}
+			val = tmp
+			return
+		}
+		tmp := reflect.New(t).Elem()
+		err = tmp.Interface().(Scanner).Scan(str)
+		if err != nil {
+			return
+		}
+		val = tmp
+		return
+	}
+	return ParseValue(t.Kind(), str)
+}
+
+func isScanner(t reflect.Type) bool {
+	return t.Implements(reflect.TypeOf((*Scanner)(nil)).Elem())
 }
 
 // ParseValue parses str in to value.

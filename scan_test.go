@@ -34,6 +34,9 @@ func TestScan(t *testing.T) {
 		require.NoError(t,
 			Scan(reflect.ValueOf(&a).Elem().FieldByName("Str"), "hello"))
 		require.Equal(t, "hello", a.Str)
+		require.NoError(t,
+			Scan(reflect.ValueOf(&a).Elem().FieldByName("Str"), ""))
+		require.Equal(t, "", a.Str)
 	}
 	{
 		var a struct {

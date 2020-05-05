@@ -20,6 +20,24 @@ func New(ptr interface{}) *Config {
 	}
 }
 
+// Configure configures the configurable.
+func (c *Config) Configure(configurable Configurable) error {
+	return iterFields(reflect.ValueOf(c.ptr), nil,
+		func(
+			field reflect.Value, typeField reflect.StructField,
+			key string, path ...string) (
+			err error,
+		) {
+			tag, err := parseTag(typeField.Tag.Get("conf"))
+			if err != nil {
+				return
+			}
+			err = configurable.Configure(field.Type(), tag, key, path...)
+			return
+		},
+	)
+}
+
 // Load loads the config from flattened readers.
 func (c *Config) Load(readers ...Reader) error {
 	c.m = make(Map)
@@ -45,14 +63,14 @@ func (c *Config) Load(readers ...Reader) error {
 			value, exists := c.read(readers, key, path...)
 
 			// return error for required config not found
-			if !exists && !tag.hasDefault {
+			if !exists && tag.Default == nil {
 				err = fmt.Errorf("key=%s. %w", key, ErrConfigNotFound)
 				return
 			}
 
 			// set default value for not found config
-			if !exists && tag.hasDefault {
-				value = tag.defaultValue
+			if !exists && tag.Default != nil {
+				value = *tag.Default
 			}
 
 			// parse value
