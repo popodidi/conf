@@ -12,96 +12,140 @@ import (
 const sep = "-"
 
 // New returns a flag reader with go builtin flag package.
-func New() *Flag {
-	return NewFlag(newGoFlagSys())
+func New() *Reader {
+	return NewReader(NewSys())
 }
 
-// NewFlag returns a flag reader with custom flag system.
-func NewFlag(sys System) *Flag {
-	return &Flag{
+// NewReader returns a flag reader with custom flag system.
+func NewReader(sys System) *Reader {
+	return &Reader{
 		sys:   sys,
 		store: make(conf.Map),
 	}
 }
 
-// System defines the flag parsing system.
-type System interface {
-	// Flag returns the ptr of the parsed value.
-	Flag(t reflect.Type, tag conf.FieldTag, name string) (ptr interface{})
-
-	// Parse parses arguments.
-	Parse(args []string) error
-
-	// DefaultArgs returns default arguments, e.g. os.Args[1:].
-	DefaultArgs() []string
-
-	// IsFlagSet returns if the flag was set.
-	IsFlagSet(name string) (found bool)
-
-	// Usage returns the usage string.
-	Usage() string
-}
-
-// Flag defines the flag configurable reader.
-type Flag struct {
+// Reader defines the flag configurable reader.
+type Reader struct {
 	once  sync.Once
 	sys   System
 	store conf.Map
 }
 
-// Configure configures the flag with f.sys.
-func (f *Flag) Configure(
+// Configure configures the flag with r.sys.
+func (r *Reader) Configure(
 	t reflect.Type, tag conf.FieldTag, key string, path ...string) error {
-	if f.store.In(path...).Get(key) != nil {
+	if r.store.In(path...).Get(key) != nil {
 		return nil
 	}
-	return f.store.MustIn(path...).Set(
-		key, f.sys.Flag(t, tag, f.flagName(key, path...)))
+	return r.store.MustIn(path...).Set(
+		key, r.makeFlag(t, tag, r.flagName(key, path...)))
 }
 
-// Parse parses the arguments with f.sys. Parse should be executed after
+func (r *Reader) makeFlag(
+	t reflect.Type, tag conf.FieldTag, name string) Flag {
+	var (
+		defaultValue interface{}
+	)
+	if tag.Default != nil {
+		val, err := conf.ScanValue(t, *tag.Default)
+		if err != nil {
+			return r.sys.String(name, *tag.Default, tag.Usage)
+		}
+		if val.CanInterface() {
+			defaultValue = val.Interface()
+		}
+	}
+	switch t.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32:
+		if defaultValue != nil {
+			return r.sys.Int(name, defaultValue.(int), tag.Usage)
+		}
+		return r.sys.Int(name, 0, tag.Usage)
+	case reflect.Int64:
+		if defaultValue != nil {
+			return r.sys.Int64(name, defaultValue.(int64), tag.Usage)
+		}
+		return r.sys.Int64(name, 0, tag.Usage)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+		if defaultValue != nil {
+			return r.sys.Uint(name, defaultValue.(uint), tag.Usage)
+		}
+		return r.sys.Uint(name, 0, tag.Usage)
+	case reflect.Uint64:
+		if defaultValue != nil {
+			return r.sys.Uint64(name, defaultValue.(uint64), tag.Usage)
+		}
+		return r.sys.Uint64(name, 0, tag.Usage)
+	case reflect.Float32, reflect.Float64:
+		if defaultValue != nil {
+			return r.sys.Float64(name, defaultValue.(float64), tag.Usage)
+		}
+		return r.sys.Float64(name, 0, tag.Usage)
+	case reflect.Bool:
+		if defaultValue != nil {
+			return r.sys.Bool(name, defaultValue.(bool), tag.Usage)
+		}
+		return r.sys.Bool(name, false, tag.Usage)
+	case reflect.String:
+		if defaultValue != nil {
+			return r.sys.String(name, defaultValue.(string), tag.Usage)
+		}
+		return r.sys.String(name, "", tag.Usage)
+	default:
+		if tag.Default != nil {
+			return r.sys.String(name, *tag.Default, tag.Usage)
+		}
+		return r.sys.String(name, "", tag.Usage)
+	}
+}
+
+// Parse parses the arguments with r.sys. Parse should be executed after
 // configuration since it's only executed once. If not executed before Read,
-// it will be executed with f.sys.DefaultArgs().
-func (f *Flag) Parse(args []string) error {
+// it will be executed with r.sys.DefaultArgs().
+func (r *Reader) Parse(args []string) error {
 	var err error
-	f.once.Do(func() {
-		err = f.sys.Parse(args)
+	r.once.Do(func() {
+		err = r.sys.Parse(args)
 	})
 	return err
 }
 
 // Usage returns usage string.
-func (f *Flag) Usage() string {
-	return f.sys.Usage()
+func (r *Reader) Usage() string {
+	var str strings.Builder
+	r.store.Iter(
+		func(key string, val interface{}, path ...string) (next bool) {
+			flg := val.(Flag)
+			_, _ = str.WriteString(fmt.Sprintf("  --%-20s", flg.Name()))
+			if flg.Usage() != "" {
+				_, _ = str.WriteString(fmt.Sprintf(" %s", flg.Usage()))
+			}
+			_, _ = str.WriteString("\n")
+			return true
+		},
+	)
+	return str.String()
 }
 
-// Read reads the value and parses f.sys.DefaultArgs() if never parsed.
-func (f *Flag) Read(key string, path ...string) (value string, exists bool) {
-	err := f.Parse(f.sys.DefaultArgs())
+// Read reads the value and parses r.sys.DefaultArgs() if never parsed.
+func (r *Reader) Read(key string, path ...string) (value string, exists bool) {
+	err := r.Parse(r.sys.DefaultArgs())
 	if err != nil {
 		return
 	}
-	if !f.sys.IsFlagSet(f.flagName(key, path...)) {
+	if !r.sys.IsSet(r.flagName(key, path...)) {
 		return
 	}
-	val := f.store.In(path...).Get(key)
+	val := r.store.In(path...).Get(key)
 	if val == nil {
 		return
 	}
-
-	v := reflect.ValueOf(val)
-	if v.Kind() != reflect.Ptr {
-		return
-	}
-	if v.IsNil() {
-		return
-	}
-	value = fmt.Sprintf("%v", v.Elem().Interface())
+	value = val.(Flag).Value()
 	exists = true
 	return
 }
 
-func (f *Flag) flagName(key string, path ...string) string {
+func (r *Reader) flagName(key string, path ...string) string {
 	key = strings.ToLower(key)
 	if len(path) == 0 {
 		return key
