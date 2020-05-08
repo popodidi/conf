@@ -37,6 +37,14 @@ func (f *goSys) IsSet(name string) (found bool) {
 	return
 }
 
+func (f *goSys) Read(name string) string {
+	flg := f.fs.Lookup(name)
+	if flg == nil {
+		return ""
+	}
+	return flg.Value.String()
+}
+
 func (f *goSys) Int(name string, value int, usage string) Flag {
 	_ = f.fs.Int(name, value, usage)
 	return &goFlag{flag: f.fs.Lookup(name)}
@@ -81,10 +89,6 @@ func (f *goFlag) Name() string {
 }
 func (f *goFlag) Usage() string {
 	return f.flag.Usage
-}
-
-func (f *goFlag) Value() string {
-	return f.flag.Value.String()
 }
 
 func (f *goFlag) DefaultValue() string {

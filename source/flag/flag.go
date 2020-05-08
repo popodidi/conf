@@ -133,14 +133,11 @@ func (r *Reader) Read(key string, path ...string) (value string, exists bool) {
 	if err != nil {
 		return
 	}
-	if !r.sys.IsSet(r.flagName(key, path...)) {
+	name := r.flagName(key, path...)
+	if !r.sys.IsSet(name) {
 		return
 	}
-	val := r.store.In(path...).Get(key)
-	if val == nil {
-		return
-	}
-	value = val.(Flag).Value()
+	value = r.sys.Read(name)
 	exists = true
 	return
 }

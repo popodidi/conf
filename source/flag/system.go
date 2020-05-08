@@ -15,6 +15,7 @@ type System interface {
 // FlagSet defines the interface flag set to manage flags.
 type FlagSet interface {
 	IsSet(name string) bool
+	Read(name string) string
 
 	Int(name string, value int, usage string) Flag
 	Int64(name string, value int64, usage string) Flag
@@ -29,6 +30,5 @@ type FlagSet interface {
 type Flag interface {
 	Name() string
 	Usage() string
-	Value() string
 	DefaultValue() string
 }
